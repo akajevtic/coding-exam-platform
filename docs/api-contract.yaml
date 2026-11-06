@@ -1,0 +1,340 @@
+openapi: 3.1.0
+info:
+  title: RAF LMS API
+  version: 0.1.0
+  description: >-
+    Početni ugovor za paralelan rad klijenta i servera. Nacrt je ograničen na MVP
+    i treba ga zajednički potvrditi pre implementacije. Sve vreme je ISO-8601 sa zonom.
+servers:
+  - url: http://localhost:8080/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      security: []
+      summary: Prijava i izdavanje access tokena
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Uspešna prijava
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /teacher/exams:
+    post:
+      summary: Nastavnik kreira polaganje
+      security: [{ bearerAuth: [] }]
+      x-required-role: NASTAVNIK
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExamInput' }
+      responses:
+        '201':
+          description: Polaganje kreirano
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exam' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /teacher/exams/{examId}/roster:
+    put:
+      summary: Postavlja spisak prijavljenih studenata
+      x-required-role: NASTAVNIK
+      parameters: [{ $ref: '#/components/parameters/ExamId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [students]
+              properties:
+                students:
+                  type: array
+                  items: { $ref: '#/components/schemas/StudentIdentity' }
+      responses:
+        '200': { description: Spisak je sačuvan }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /teacher/exams/{examId}/task:
+    put:
+      summary: Postavlja ZIP projektnog zadatka
+      x-required-role: NASTAVNIK
+      parameters: [{ $ref: '#/components/parameters/ExamId' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '204': { description: Zadatak je postavljen }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /student/exams:
+    get:
+      summary: Polaganja dostupna prijavljenom studentu
+      x-required-role: STUDENT
+      responses:
+        '200':
+          description: Polaganja i dozvoljeni statusi
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Exam' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /student/exams/{examId}/attempt:
+    post:
+      summary: Proverava roster i vremenski prozor i započinje pokušaj
+      x-required-role: STUDENT
+      parameters: [{ $ref: '#/components/parameters/ExamId' }]
+      responses:
+        '201':
+          description: Pokušaj započet; server beleži vreme
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attempt' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /student/attempts/{attemptId}/task:
+    get:
+      summary: Preuzima zadatak za aktivan pokušaj
+      x-required-role: STUDENT
+      parameters: [{ $ref: '#/components/parameters/AttemptId' }]
+      responses:
+        '200':
+          description: ZIP zadatak
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /student/attempts/{attemptId}/submission:
+    put:
+      summary: Predaje ili zamenjuje rešenje u dozvoljenom roku
+      x-required-role: STUDENT
+      parameters: [{ $ref: '#/components/parameters/AttemptId' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Predaja zabeležena
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Submission' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /teacher/exams/{examId}/submissions:
+    get:
+      summary: Lista predaja uz filtere za nastavnika
+      x-required-role: NASTAVNIK
+      parameters:
+        - { $ref: '#/components/parameters/ExamId' }
+        - in: query
+          name: group
+          schema: { type: string }
+        - in: query
+          name: student
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [NIJE_ZAPOCETO, U_IZRADI, PREDATO] }
+      responses:
+        '200':
+          description: Predaje i statusi
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Submission' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /teacher/submissions/{submissionId}/grade:
+    put:
+      summary: Unosi poene i komentare povezane sa fajlom/linijom
+      x-required-role: NASTAVNIK
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GradeInput' }
+      responses:
+        '200':
+          description: Ocena sačuvana
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeInput' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /student/submissions/{submissionId}/feedback:
+    get:
+      summary: Student čita samo povratnu informaciju za sopstvenu predaju
+      x-required-role: STUDENT
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Poeni i komentari
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeInput' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /teacher/exams/{examId}/monitoring:
+    get:
+      summary: Podaci za nadzor polaganja
+      x-required-role: NASTAVNIK
+      parameters: [{ $ref: '#/components/parameters/ExamId' }]
+      responses:
+        '200':
+          description: Statusi, brojači i prosečno vreme izrade
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitoring' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ExamId:
+      name: examId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    AttemptId:
+      name: attemptId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+  schemas:
+    LoginResponse:
+      type: object
+      required: [accessToken, userId, role]
+      properties:
+        accessToken: { type: string }
+        userId: { type: integer, format: int64 }
+        role: { type: string, enum: [STUDENT, NASTAVNIK] }
+    ExamInput:
+      type: object
+      required: [title, subject, examPeriod, group, startsAt, endsAt]
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        examPeriod: { type: string }
+        group: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    Exam:
+      allOf:
+        - { $ref: '#/components/schemas/ExamInput' }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer, format: int64 }
+    StudentIdentity:
+      type: object
+      required: [studentNumber]
+      properties:
+        studentNumber: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+    Attempt:
+      type: object
+      required: [id, status, startedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        status: { type: string, enum: [NIJE_ZAPOCETO, U_IZRADI, PREDATO] }
+        startedAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+    Submission:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: integer, format: int64 }
+        studentNumber: { type: string }
+        status: { type: string, enum: [NIJE_ZAPOCETO, U_IZRADI, PREDATO] }
+        downloadedAt: { type: string, format: date-time }
+        submittedAt: { type: string, format: date-time }
+        score: { type: number }
+    GradeInput:
+      type: object
+      required: [score, comments]
+      properties:
+        score: { type: number, minimum: 0 }
+        comments:
+          type: array
+          items:
+            type: object
+            required: [filePath, line, text]
+            properties:
+              filePath: { type: string }
+              line: { type: integer, minimum: 1 }
+              text: { type: string }
+    Monitoring:
+      type: object
+      required: [downloadedCount, submittedCount, averageDurationSeconds, submissions]
+      properties:
+        downloadedCount: { type: integer, minimum: 0 }
+        submittedCount: { type: integer, minimum: 0 }
+        averageDurationSeconds: { type: number, minimum: 0 }
+        submissions:
+          type: array
+          items: { $ref: '#/components/schemas/Submission' }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+  responses:
+    BadRequest:
+      description: Neispravan zahtev
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Nedostaje ili nije ispravan token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Korisnik nema pravo na ovu operaciju
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Resurs nije pronađen
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Radnja nije dozvoljena za trenutno stanje/termin
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
