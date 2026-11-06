@@ -1,22 +1,15 @@
 # RAF LMS
 
 Platforma za pripremu i realizaciju kolokvijuma i ispita iz programiranja.
-Ovaj repozitorijum je početni kostur za rad u paru. Za sada sadrži opis MVP-a,
-podelu rada i nacrt API ugovora; funkcionalnosti aplikacije tek treba implementirati.
+Nastavnik postavlja zadatak, studenti ga rade u editoru i predaju, a nastavnik prati tok
+uživo i ocenjuje radove komentarima po liniji koda.
 
 ## Struktura
 
 - `api/` — Spring Boot REST API (Java, MySQL, Spring Data JPA)
 - `editor/` — desktop aplikacija Electron + Monaco Editor
 - `monitoring/` — veb aplikacija React za nastavnički nadzor
-- `docs/` — specifikacija, podela rada i nacrt API-ja
-
-## Dogovor za rad
-
-- `main` čuva integrisano stanje.
-- Svaki član radi u svojoj grani i predlaže promene kroz Pull Request.
-- API ugovor je zajednička granica: klijent može koristiti mock podatke dok se API razvija.
-- Pogledati [podelu rada](docs/work-split.md), [MVP specifikaciju](docs/project-scope.md) i [API nacrt](docs/api-contract.yaml).
+- `docs/` — [specifikacija](docs/project-scope.md) i [API ugovor](docs/api-contract.yaml)
 
 ## Početni tok
 
