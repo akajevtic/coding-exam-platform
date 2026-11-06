@@ -40,6 +40,15 @@ Prvo isporučiti kompletan obavezni tok: nastavnik kreira polaganje i zadatak �
 
 Predmet, ispitni rok, termin, grupa, zadatak, student, prijava/spisak, korisnički nalog i uloga, pokušaj polaganja, predaja, komentar i poeni. Pokušaj polaganja čuva identitet studenta i polaganja, status, vreme preuzimanja i vreme predaje. Komentar je vezan za predaju, putanju fajla i liniju.
 
+Implementirano u `api/src/main/java/org/raflab/lms/model`:
+
+- `Termin` = predmet + ispitni rok + početak/kraj (`Instant`, UTC) + učionica.
+- `Grupa` pripada terminu; `Zadatak` je jedan po grupi (ZIP na disku, u bazi putanja).
+- `Prijava` = student + predmet + ispitni rok (jedinstveno); student sme da preuzme zadatak termina samo uz prijavu za njegov predmet i rok.
+- `Rad` spaja pokušaj i predaju: jedan po studentu i zadatku, status `U_IZRADI`/`PREDATO`, vreme preuzimanja i predaje, putanja rešenja, poeni. Nova predaja zamenjuje prethodnu.
+- `Komentar` je vezan za `Rad`, putanju fajla i liniju.
+- Student se identifikuje indeksom (`RN 12/2023`), nalog emailom.
+
 ## Pravila koja moraju biti sprovedena na serveru
 
 - Student mora biti na spisku za polaganje.

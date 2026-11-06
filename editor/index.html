@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; worker-src 'self' blob:">
+  <title>RAF LMS</title>
+  <link rel="stylesheet" href="node_modules/monaco-editor/min/vs/editor/editor.main.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="zaglavlje">
+    <strong>RAF LMS</strong>
+    <span id="korisnik"></span>
+    <button id="odjava" hidden>Odjava</button>
+  </header>
+  <div id="poruka" hidden></div>
+  <main id="app"></main>
+  <script src="node_modules/monaco-editor/min/vs/loader.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "raf-lms-editor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RAF LMS editor za studente i nastavnike (Electron + Monaco)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "adm-zip": "0.6.1",
+    "monaco-editor": "0.57.0"
+  },
+  "devDependencies": {
+    "electron": "45.1.0"
+  }
+}

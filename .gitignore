@@ -13,7 +13,12 @@
 !.env.example
 
 # IDE / OS
-.idea/
+# IntelliJ: deli se samo run konfiguracija
+.idea/*
+!.idea/runConfigurations/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Uploadovani ZIP-ovi lokalnog API-ja
+api/storage/
